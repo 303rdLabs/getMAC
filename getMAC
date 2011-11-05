@@ -1,0 +1,146 @@
+#!/bin/bash
+# **getMAC** is easy to use bash tool for manipulating your MAC address when your ISP is using MAC whitelist.
+# 
+# User variables
+# --------------
+# 
+# don't change variables, unless you know what are you doing
+
+# scanned subnetwork
+NETWORK=147.32.111.0/23
+
+# directory to save files
+WORKDIR=$HOME/getMAC
+
+# common basename for lists of mac adresses
+FILES=$WORKDIR/mac-addresses
+
+# network device used to connect to scanned subnetwork
+DEV=eth0
+
+
+OPTIONS="help scan set"
+DATE=`date +%Y%m%d%H%M%S`
+
+set -u  # will stop when script try to ru command with uninitialized variable
+set -e  # stop on any error
+
+function help() {
+    echo "zavolana napoveda"
+    echo "parametry: help scan merge setrandom setfree backup restore"
+}
+
+function scan() {
+    sudo nmap -sP $NETWORK -n |\
+        grep MAC |\
+        sed 's/MAC\ Address\:\ //g' |\
+        sed 's/\ (.*)//g' |\
+        uniq |\
+        sort -n > $FILES-$DATE.txt
+}
+
+function merge() {
+# dodelat testovani existujicich souboru (existence a prave ke cteni pro $FILES.txt
+    cat $(ls $FILES*)  |\
+        uniq |\
+        sort -n >| $FILES.txt
+        rm $(ls -1 $FILES-[0-9]* | head -$(echo "`ls -l $FILES-[0-9]* | wc -l`-1" | bc))    # delete all logs exept the last one
+}
+
+function setrandom() {
+    if [ -f $WORKDIR/backup_mac-$DEV.txt ]; then
+        if [ -f $FILES.txt ]; then
+            cat $FILES.txt
+            # vygrepnout randomku
+            setit ------semka napisu tu mac adresu---------
+        else
+            echo "$FILES.txt doesn't exist! Use \"getMAC scan\" command first."
+        fi
+    else
+        echo "Backup file doesn't exist! Use \"getMAC backup\" command first."
+    fi
+}
+
+function setfree() {
+    if [ -f $WORKDIR/backup_mac-$DEV.txt ]; then
+        comm --nocheck-order -23 $FILES.txt $FILES-[0-9]*
+        # detekce správného výstupu
+        # vygrepnout randomku
+        setit ------semka napisu tu mac adresu---------
+    else
+        echo "Backup file doesn't exist! Use \"getMAC backup\" command first."
+    fi
+}
+
+function backup() {
+    if [ ! -f $WORKDIR/backup_mac-$DEV.txt ]; then
+        sudo ip link show dev $DEV |\
+            tail -1 |\
+            sed 's/link\/ether\ //g' |\
+            sed 's/\ brd.*//g' >\
+            $WORKDIR/backup_mac-$DEV.txt
+    else
+        echo "Backup file already exist! Remove it and try it again."
+    fi
+}
+
+function restore() {
+    if [ -f $WORKDIR/backup_mac-$DEV.txt ]; then
+        setit `cat $WORKDIR/backup_mac-$DEV.txt`
+    else
+        echo "Backup file $WORKDIR/backup_mac-$DEV.txt not found."
+    fi
+}
+
+function setit() {
+        sudo ip link set address dev $DEV `$1`
+        sudo ip link set down dev $DEV
+        sudo ip link set up dev $DEV
+
+}
+
+case $1 in
+    help | -h | --help )
+        help 
+        ;;
+    scan | --scan )
+        scan
+        ;;
+    merge | --merge )
+        merge
+        ;;
+    setrandom | --setrandom )
+        setrandom
+        ;;
+    setfree | --setfree )
+        setfree
+        ;;
+    backup | --backup )
+        backup
+        ;;
+    restore | --restore )
+        restore
+        ;;
+    *)
+        echo "wrong choice"
+        help
+        ;;
+esac
+
+
+# DEPENDENCIES
+# date
+# bash
+# nmap
+# grep
+# sed
+# uniq
+# sort
+# cat
+# rm
+# head 
+# echo
+# bc
+# wc
+# comm
+# ..........
