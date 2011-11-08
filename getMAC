@@ -30,28 +30,35 @@ function help() {
     echo "parametry: help scan merge setrandom setfree backup restore"
 }
 
-function scan() {
-    sudo nmap -sP $NETWORK -n |\
-        grep MAC |\
-        sed 's/MAC\ Address\:\ //g' |\
-        sed 's/\ (.*)//g' |\
-        uniq |\
-        sort -n > $FILES-$DATE.txt
-}
+# First of all, we need to scan our network. We are going to use [`nmap`] [nm]
+# ping scan. It's fast enough even on big subnets, and you will receive all MAC
+# addresses. After that, we will `grep` out the line containing MAC address,
+# and using some `sed` magic to get out unnecessary information (like chipset
+# manufacturer and etc.) At the end, we use `uniq` (I know I don't have to, but
+# it is better.) to suppress duplicates and `sort` to sort final list in
+# numerical order (Yes, I am kind of perfectionist) and put this into special
+# file with actual date in name.
+#
+# [nm]: http://nmap.org/
+function scan() { sudo nmap -sP $NETWORK -n |\ grep MAC |\ sed 's/MAC\
+    Address\:\ //g' |\ sed 's/\ (.*)//g' |\ uniq |\ sort -n > $FILES-$DATE.txt
+    }
 
+# merge list files
 function merge() {
-# dodelat testovani existujicich souboru (existence a prave ke cteni pro $FILES.txt
+#dodelat testovani existujicich souboru (existence a prave ke cteni pro $FILES.txt
     cat $(ls $FILES*)  |\
         uniq |\
         sort -n >| $FILES.txt
         rm $(ls -1 $FILES-[0-9]* | head -$(echo "`ls -l $FILES-[0-9]* | wc -l`-1" | bc))    # delete all logs exept the last one
 }
 
+# set random MAC address from final list
 function setrandom() {
     if [ -f $WORKDIR/backup_mac-$DEV.txt ]; then
         if [ -f $FILES.txt ]; then
             cat $FILES.txt
-            # vygrepnout randomku
+            #vygrepnout randomku
             setit ------semka napisu tu mac adresu---------
         else
             echo "$FILES.txt doesn't exist! Use \"getMAC scan\" command first."
@@ -61,17 +68,19 @@ function setrandom() {
     fi
 }
 
+# set random MAC address, which is in final list AND is not in last list (sorted by time)
 function setfree() {
     if [ -f $WORKDIR/backup_mac-$DEV.txt ]; then
         comm --nocheck-order -23 $FILES.txt $FILES-[0-9]*
-        # detekce správného výstupu
-        # vygrepnout randomku
+        #detekce správného výstupu
+        #vygrepnout randomku
         setit ------semka napisu tu mac adresu---------
     else
         echo "Backup file doesn't exist! Use \"getMAC backup\" command first."
     fi
 }
 
+# backup current MAC address
 function backup() {
     if [ ! -f $WORKDIR/backup_mac-$DEV.txt ]; then
         sudo ip link show dev $DEV |\
@@ -84,6 +93,7 @@ function backup() {
     fi
 }
 
+# restore MAC address from backup file
 function restore() {
     if [ -f $WORKDIR/backup_mac-$DEV.txt ]; then
         setit `cat $WORKDIR/backup_mac-$DEV.txt`
@@ -92,6 +102,7 @@ function restore() {
     fi
 }
 
+# internal function used for setting the MAC address
 function setit() {
         sudo ip link set address dev $DEV `$1`
         sudo ip link set down dev $DEV
@@ -99,6 +110,7 @@ function setit() {
 
 }
 
+# main function
 case $1 in
     help | -h | --help )
         help 
@@ -144,3 +156,5 @@ esac
 # wc
 # comm
 # ..........
+
+# [getMAC]: https://github.com/303rdLabs/getMAC
