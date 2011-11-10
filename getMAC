@@ -40,17 +40,23 @@ function help() {
 # file with actual date in name.
 #
 # [nm]: http://nmap.org/
-function scan() { sudo nmap -sP $NETWORK -n |\ grep MAC |\ sed 's/MAC\
-    Address\:\ //g' |\ sed 's/\ (.*)//g' |\ uniq |\ sort -n > $FILES-$DATE.txt
-    }
+function scan() { 
+    sudo nmap -sP $NETWORK -n |\
+        grep MAC |\
+        sed 's/MAC\ Address\:\ //g' |\
+        sed 's/\ (.*)//g' |\
+        uniq |\
+        sort -n > $FILES-$DATE.txt
+}
 
 # merge list files
 function merge() {
-#dodelat testovani existujicich souboru (existence a prave ke cteni pro $FILES.txt
+#dodělat testovaní existujících souboru (existence a práva ke čtení pro $FILES.txt
     cat $(ls $FILES*)  |\
         uniq |\
         sort -n >| $FILES.txt
-        rm $(ls -1 $FILES-[0-9]* | head -$(echo "`ls -l $FILES-[0-9]* | wc -l`-1" | bc))    # delete all logs exept the last one
+        # delete all logs exept the last one
+        rm $(ls -1 $FILES-[0-9]* | head -$(echo "`ls -l $FILES-[0-9]* | wc -l`-1" | bc))    
 }
 
 # set random MAC address from final list
