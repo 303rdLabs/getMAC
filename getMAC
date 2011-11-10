@@ -12,7 +12,7 @@ NETWORK=147.32.111.0/23
 # directory to save files
 WORKDIR=$HOME/getMAC
 
-# common basename for lists of mac adresses
+# common base name for lists of mac addresses
 FILES=$WORKDIR/mac-addresses
 
 # network device used to connect to scanned subnetwork
@@ -20,13 +20,19 @@ DEV=eth0
 
 
 OPTIONS="help scan set"
+
+# date format used for put time into names of lists
 DATE=`date +%Y%m%d%H%M%S`
 
-set -u  # will stop when script try to ru command with uninitialized variable
-set -e  # stop on any error
+# will stop when script try to run command with uninitialized variable
+set -u 
 
+# stop on any error
+set -e 
+
+# this will show basic help, available parameters, etc.
 function help() {
-    echo "zavolana napoveda"
+    echo "zavolaná nápověda"
     echo "parametry: help scan merge setrandom setfree backup restore"
 }
 
@@ -37,7 +43,7 @@ function help() {
 # manufacturer and etc.) At the end, we use `uniq` (I know I don't have to, but
 # it is better.) to suppress duplicates and `sort` to sort final list in
 # numerical order (Yes, I am kind of perfectionist) and put this into special
-# file with actual date in name.
+    # file with actual date in name.
 #
 # [nm]: http://nmap.org/
 function scan() { 
@@ -55,7 +61,7 @@ function merge() {
     cat $(ls $FILES*)  |\
         uniq |\
         sort -n >| $FILES.txt
-        # delete all logs exept the last one
+        # delete all logs except the last one
         rm $(ls -1 $FILES-[0-9]* | head -$(echo "`ls -l $FILES-[0-9]* | wc -l`-1" | bc))    
 }
 
